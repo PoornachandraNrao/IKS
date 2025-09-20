@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MEMS and IC Integration Quiz</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .quiz-container {
+            background-color: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            width: 90%;
+            max-width: 800px;
+            overflow: hidden;
+        }
+        
+        .quiz-header {
+            background: #2575fc;
+            color: white;
+            padding: 25px;
+            text-align: center;
+        }
+        
+        .quiz-header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        
+        .quiz-header p {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+        
+        .progress-container {
+            background-color: #e9ecef;
+            height: 10px;
+            width: 100%;
+            border-radius: 0;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(to right, #6a11cb, #2575fc);
+            width: 0%;
+            transition: width 0.3s ease;
+            border-radius: 0;
+        }
+        
+        .score-circle {
+            width: 80px;
+            height: 80px;
+            background: #6a11cb;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 20px auto;
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            box-shadow: 0 0 15px rgba(106, 17, 203, 0.5);
+            transition: transform 0.3s ease;
+        }
+        
+        .score-circle:hover {
+            transform: scale(1.05);
+        }
+        
+        .question-container {
+            padding: 25px;
+        }
+        
+        .question-number {
+            font-size: 18px;
+            color: #6c757d;
+            margin-bottom: 5px;
+        }
+        
+        .question {
+            font-size: 22px;
+            font-weight: 600;
+            margin-bottom: 25px;
+            color: #343a40;
+            line-height: 1.4;
+        }
+        
+        .options-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 25px;
+        }
+        
+        .option {
+            padding: 15px;
+            background-color: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 16px;
+        }
+        
+        .option:hover {
+            background-color: #e9ecef;
+            transform: translateX(5px);
+        }
+        
+        .option.selected {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+        
+        .option.correct {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+        
+        .option.incorrect {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+        
+        .feedback {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+            font-weight: 500;
+        }
+        
+        .feedback.correct {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .feedback.incorrect {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .navigation {
+            display: flex;
+            justify-content: space-between;
+            padding: 0 25px 25px;
+        }
+        
+        button {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+        
+        #prev-btn {
+            background-color: #6c757d;
+            color: white;
+        }
+        
+        #prev-btn:hover {
+            background-color: #5a6268;
+        }
+        
+        #next-btn {
+            background-color: #007bff;
+            color: white;
+        }
+        
+        #next-btn:hover {
+            background-color: #0069d9;
+        }
+        
+        #submit-btn {
+            background-color: #28a745;
+            color: white;
+            display: none;
+        }
+        
+        #submit-btn:hover {
+            background-color: #218838;
+        }
+        
+        .results-container {
+            padding: 30px;
+            text-align: center;
+            display: none;
+        }
+        
+        .results-container h2 {
+            font-size: 28px;
+            margin-bottom: 20px;
+            color: #343a40;
+        }
+        
+        .final-score {
+            font-size: 72px;
+            font-weight: bold;
+            color: #6a11cb;
+            margin: 20px 0;
+        }
+        
+        .restart-btn {
+            background-color: #6a11cb;
+            color: white;
+            padding: 15px 30px;
+            font-size: 18px;
+            margin-top: 20px;
+        }
+        
+        .restart-btn:hover {
+            background-color: #550db0;
+        }
+        
+        @media (max-width: 600px) {
+            .quiz-header h1 {
+                font-size: 24px;
+            }
+            
+            .question {
+                font-size: 18px;
+            }
+            
+            .option {
+                padding: 12px;
+                font-size: 14px;
+            }
+            
+            button {
+                padding: 10px 15px;
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="quiz-container">
+        <div class="quiz-header">
+            <h1>MEMS and IC Integration Quiz</h1>
+            <p>Test your knowledge on microsystems and MEMS technology</p>
+        </div>
+        
+        <div class="progress-container">
+            <div class="progress-bar"></div>
+        </div>
+        
+        <div class="score-circle">0/40</div>
+        
+        <div class="question-container">
+            <div class="question-number">Question 1 of 40</div>
+            <div class="question"></div>
+            
+            <div class="options-container"></div>
+            
+            <div class="feedback"></div>
+            
+            <div class="navigation">
+                <button id="prev-btn">Previous</button>
+                <button id="next-btn">Next</button>
+                <button id="submit-btn">Submit Quiz</button>
+            </div>
+        </div>
+        
+        <div class="results-container">
+            <h2>Quiz Completed!</h2>
+            <p>Your final score is:</p>
+            <div class="final-score">0/40</div>
+            <button class="restart-btn">Restart Quiz</button>
+        </div>
+    </div>
+
+    <script>
+        // Quiz questions and answers
+        const quizData = [
+            {
+                question: "In general, a microsystem consists of ______ components.",
+                options: ["One", "Two", "Three", "Four"],
+                answer: 2
+            },
+            {
+                question: "Which of the following is not a characteristic of miniaturisation",
+                options: ["Low cost", "Better speed of operation", "Lower energy requirements", "Low level of integration"],
+                answer: 3
+            },
+            {
+                question: "What is one of the main advantages of integrated microsystems over traditional systems?",
+                options: ["Larger size", "Increased complexity", "Miniaturization and reduced power consumption", "Higher manufacturing costs"],
+                answer: 2
+            },
+            {
+                question: "What is the primary function of a micro actuator?",
+                options: ["To store data in a digital format", "To convert electrical signals into physical movement or force", "To detect changes in the environment", "To transmit signals wirelessly"],
+                answer: 1
+            },
+            {
+                question: "What range of sizes do MEMS components typically fall within?",
+                options: ["1nm to 1μm", "1μm to 1mm", "1mm to 1cm", "1cm to 10cm"],
+                answer: 1
+            },
+            {
+                question: "What is the origin of microsystems traced back to?",
+                options: ["Transistors", "Si Piezo resistors", "Integrated Circuits", "Diodes"],
+                answer: 2
+            },
+            {
+                question: "What is the largest market share of MEMS products currently?",
+                options: ["Microsensors", "Microfluidics", "Micro accelerometers", "Micro channels"],
+                answer: 0
+            },
+            {
+                question: "What is the primary method used to produce complex geometries in MEMS components?",
+                options: ["Casting", "3D Printing", "Machining", "Microfabrication"],
+                answer: 3
+            },
+            {
+                question: "Which of the following is an example of a micro-actuator?",
+                options: ["Acoustic Wave Sensor", "Pressure Sensor", "Chemical Sensor", "Gripper"],
+                answer: 3
+            },
+            {
+                question: "What is the unifying factor of a MEMS device, regardless of the terminology used in different regions?",
+                options: ["Fabrication technique", "Primary use in consumer electronics", "Size ranging from nm to μm", "Application in aerospace industry"],
+                answer: 2
+            },
+            {
+                question: "What is the primary function of MEMS technology?",
+                options: ["Creating purely electronics circuits for signal processing", "Developing software for controlling mechanical systems", "Manufacturing large scale mechanical components", "Integrating mechanical elements, sensors, actuators and electronics on a Silicon substrate"],
+                answer: 3
+            },
+            {
+                question: "What is a key advantage of using MEMS devices compared to traditional sensors and actuators?",
+                options: ["Higher power consumption", "Decreased production volume", "Reduced cost and improved performance", "Increased size and weight"],
+                answer: 2
+            },
+            {
+                question: "In micromirror array, Gold is used for",
+                options: ["Better mirror-reflectivity", "Electrodes", "Sacrificial layer", "Electrical insulation"],
+                answer: 0
+            },
+            {
+                question: "Which of the following is not a step involved in the PCR",
+                options: ["Denaturation", "Annealing", "Extension", "Sublimation"],
+                answer: 3
+            },
+            {
+                question: "Which of the following is the principle behind a MEMS accelerometer?",
+                options: ["Piezoelectric effect", "Capacitive sensing", "Thermal sensing", "Hall effect"],
+                answer: 1
+            },
+            {
+                question: "Which of the following is an example of an inertial sensor?",
+                options: ["Accelerometer", "Thermistor", "Photodiode", "Barometer"],
+                answer: 0
+            },
+            {
+                question: "What advantage do MEMS pressure sensors offer over traditional pressure sensors?",
+                options: ["Larger size and higher cost", "Smaller size and lower power consumption", "Less accuracy", "Higher weight"],
+                answer: 1
+            },
+            {
+                question: "Which type of pressure sensor is typically used for monitoring blood pressure in medical devices?",
+                options: ["Optical pressure sensor", "Capacitive MEMS pressure sensor", "Piezoresistive MEMS pressure sensor", "Thermocouple pressure sensor"],
+                answer: 2
+            },
+            {
+                question: "Which of the following materials are commonly used in piezoelectric transducers?",
+                options: ["Lead zirconate titanate (PZT)", "Silicon", "Aluminium", "Copper"],
+                answer: 0
+            },
+            {
+                question: "Which temperature range is used for the denaturation step in PCR?",
+                options: ["35–40°C", "50–55°C", "90–95°C", "100–105°C"],
+                answer: 2
+            },
+            {
+                question: "Which of the following is true about the annealing step in PCR?",
+                options: ["It is done at 90–95°C", "It allows primers to bind to the target DNA", "It is the final step in PCR", "It involves the extension of the DNA strand"],
+                answer: 1
+            },
+            {
+                question: "What is the main purpose of a Micro-PCR system?",
+                options: ["To multiply DNA sequences", "To sequence DNA", "To measure the temperature of DNA", "To detect microbial infections"],
+                answer: 0
+            },
+            {
+                question: "What is the typical temperature range for the extension step of PCR?",
+                options: ["30–35°C", "50–65°C", "70–75°C", "90–95°C"],
+                answer: 2
+            },
+            {
+                question: "Which of the following is a key advantage of MEMS magnetic micro relays?",
+                options: ["High power consumption", "Fast switching time and low power requirement", "High voltage tolerance", "Large physical size"],
+                answer: 1
+            },
+            {
+                question: "What is the primary function of a MEMS magnetic micro relay?",
+                options: ["To detect magnetic fields", "To amplify electrical signals", "To switch electrical signals on and off using magnetic forces", "To measure the temperature of magnetic materials"],
+                answer: 2
+            },
+            {
+                question: "Which of the following is a major advantage of fibre-optic sensors?",
+                options: ["Susceptibility to electromagnetic interference", "High power consumption", "Immunity to electromagnetic interference", "Large size"],
+                answer: 2
+            },
+            {
+                question: "Which MEMS device commonly uses a Wheatstone Bridge for its operation?",
+                options: ["Accelerometer", "Pressure sensor", "Optical sensor", "Capacitive sensor"],
+                answer: 1
+            },
+            {
+                question: "What is typically used as the sensing element in MEMS pressure sensors?",
+                options: ["Diaphragm", "Piezoelectric crystal", "Conductive trace", "Magnet"],
+                answer: 0
+            },
+            {
+                question: "What is the primary advantage of using RF MEMS switches over traditional mechanical switches?",
+                options: ["Higher power consumption", "Faster switching time", "Reduced switching speed", "Higher voltage tolerance"],
+                answer: 1
+            },
+            {
+                question: "Which of the following is NOT an advantage of MEMS technology?",
+                options: ["Low power consumption", "Miniaturized size", "High accuracy", "High energy requirements"],
+                answer: 3
+            },
+            {
+                question: "What is the primary purpose of a MEMS gyroscope?",
+                options: ["To measure temperature", "To measure orientation or angular velocity", "To measure electrical resistance", "To measure light intensity"],
+                answer: 1
+            },
+            {
+                question: "In a MEMS accelerometer, which part moves when acceleration occurs?",
+                options: ["The spring", "The mass", "The diaphragm", "The resistive material"],
+                answer: 1
+            },
+            {
+                question: "In a capacitive pressure sensor, what material is often used for the diaphragm?",
+                options: ["Metal", "Silicon", "Plastic", "Glass"],
+                answer: 1
+            },
+            {
+                question: "What is the role of air-gap in RF MEMS switches?",
+                options: ["To increase the capacitance", "To allow mechanical movement", "To enhance signal strength", "To store electrical charge"],
+                answer: 1
+            },
+            {
+                question: "Piezoelectric materials generate an electrical charge when subjected to:",
+                options: ["Magnetic fields", "Thermal changes", "Mechanical stress", "Light exposure"],
+                answer: 2
+            },
+            {
+                question: "What is the advantage of using MEMS pressure sensors in medical applications?",
+                options: ["High power consumption", "Large size and weight", "High sensitivity and small size", "Limited accuracy"],
+                answer: 2
+            },
+            {
+                question: "What type of actuation is commonly used in RF MEMS switches?",
+                options: ["Piezoelectric actuation", "Electrostatic actuation", "Thermal actuation", "Magnetic actuation"],
+                answer: 1
+            },
+            {
+                question: "What is the primary characteristic of electrochromic materials?",
+                options: ["They change their electrical conductivity in response to an external electric field", "They change their colour in response to an applied voltage", "They generate light when exposed to an electric current", "They change their shape when exposed to a magnetic field"],
+                answer: 1
+            },
+            {
+                question: "The micro sensor most commonly used in airbag deployment systems is",
+                options: ["Pressure Sensor", "Inertia Sensor", "Chemical Sensor", "Accelerometer"],
+                answer: 3
+            },
+            {
+                question: "The disadvantage of capacitive sensing mechanism if used in micro pressure sensor is",
+                options: ["Its sensitivity to temperature", "Its difficulty to process", "It exhibits nonlinear input/output relationship", "Its high production cost"],
+                answer: 2
+            }
+        ];
+
+        // DOM elements
+        const questionElement = document.querySelector('.question');
+        const questionNumberElement = document.querySelector('.question-number');
+        const optionsContainer = document.querySelector('.options-container');
+        const feedbackElement = document.querySelector('.feedback');
+        const scoreCircle = document.querySelector('.score-circle');
+        const progressBar = document.querySelector('.progress-bar');
+        const prevButton = document.getElementById('prev-btn');
+        const nextButton = document.getElementById('next-btn');
+        const submitButton = document.getElementById('submit-btn');
+        const restartButton = document.querySelector('.restart-btn');
+        const questionContainer = document.querySelector('.question-container');
+        const resultsContainer = document.querySelector('.results-container');
+        const finalScoreElement = document.querySelector('.final-score');
+
+        // Quiz state
+        let currentQuestion = 0;
+        let score = 0;
+        let userAnswers = Array(quizData.length).fill(null);
+        let shuffledQuizData = [];
+
+        // Shuffle the questions array
+        function shuffleQuestions() {
+            shuffledQuizData = [...quizData];
+            for (let i = shuffledQuizData.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffledQuizData[i], shuffledQuizData[j]] = [shuffledQuizData[j], shuffledQuizData[i]];
+            }
+        }
+
+        // Initialize quiz
+        function initQuiz() {
+            shuffleQuestions();
+            showQuestion();
+            updateProgressBar();
+            updateScoreCircle();
+            
+            // Event listeners
+            prevButton.addEventListener('click', goToPreviousQuestion);
+            nextButton.addEventListener('click', goToNextQuestion);
+            submitButton.addEventListener('click', showResults);
+            restartButton.addEventListener('click', restartQuiz);
+        }
+
+        // Show current question
+        function showQuestion() {
+            const question = shuffledQuizData[currentQuestion];
+            questionNumberElement.textContent = `Question ${currentQuestion + 1} of ${shuffledQuizData.length}`;
+            questionElement.textContent = question.question;
+            
+            // Clear previous options
+            optionsContainer.innerHTML = '';
+            
+            // Add options
+            question.options.forEach((option, index) => {
+                const optionElement = document.createElement('div');
+                optionElement.classList.add('option');
+                optionElement.textContent = option;
+                optionElement.dataset.index = index;
+                
+                // Mark if this option was previously selected
+                if (userAnswers[currentQuestion] === index) {
+                    optionElement.classList.add('selected');
+                }
+                
+                optionElement.addEventListener('click', selectOption);
+                optionsContainer.appendChild(optionElement);
+            });
+            
+            // Update navigation buttons
+            prevButton.style.display = currentQuestion === 0 ? 'none' : 'block';
+            nextButton.style.display = currentQuestion === shuffledQuizData.length - 1 ? 'none' : 'block';
+            submitButton.style.display = currentQuestion === shuffledQuizData.length - 1 ? 'block' : 'none';
+            
+            // Hide feedback
+            feedbackElement.style.display = 'none';
+        }
+
+        // Handle option selection
+        function selectOption(e) {
+            // Remove selected class from all options
+            const options = document.querySelectorAll('.option');
+            options.forEach(option => {
+                option.classList.remove('selected');
+                option.removeEventListener('click', selectOption);
+            });
+            
+            // Add selected class to clicked option
+            const selectedOption = e.target;
+            selectedOption.classList.add('selected');
+            
+            // Store user's answer
+            const selectedAnswer = parseInt(selectedOption.dataset.index);
+            userAnswers[currentQuestion] = selectedAnswer;
+            
+            // Check if answer is correct
+            const correctAnswer = shuffledQuizData[currentQuestion].answer;
+            const isCorrect = selectedAnswer === correctAnswer;
+            
+            // Update score
+            updateScore();
+            
+            // Show feedback
+            showFeedback(isCorrect, correctAnswer);
+        }
+
+        // Update the score based on all answered questions
+        function updateScore() {
+            score = 0;
+            for (let i = 0; i < shuffledQuizData.length; i++) {
+                if (userAnswers[i] === shuffledQuizData[i].answer) {
+                    score++;
+                }
+            }
+            updateScoreCircle();
+        }
+
+        // Show feedback for answer
+        function showFeedback(isCorrect, correctAnswerIndex) {
+            feedbackElement.textContent = isCorrect 
+                ? 'Correct! Well done.' 
+                : `Incorrect. The correct answer is: ${shuffledQuizData[currentQuestion].options[correctAnswerIndex]}`;
+            
+            feedbackElement.classList.remove('correct', 'incorrect');
+            feedbackElement.classList.add(isCorrect ? 'correct' : 'incorrect');
+            feedbackElement.style.display = 'block';
+        }
+
+        // Update progress bar
+        function updateProgressBar() {
+            const progress = ((currentQuestion + 1) / shuffledQuizData.length) * 100;
+            progressBar.style.width = `${progress}%`;
+        }
+
+        // Update score circle
+        function updateScoreCircle() {
+            scoreCircle.textContent = `${score}/${shuffledQuizData.length}`;
+        }
+
+        // Go to next question
+        function goToNextQuestion() {
+            if (currentQuestion < shuffledQuizData.length - 1) {
+                currentQuestion++;
+                showQuestion();
+                updateProgressBar();
+            }
+        }
+
+        // Go to previous question
+        function goToPreviousQuestion() {
+            if (currentQuestion > 0) {
+                currentQuestion--;
+                showQuestion();
+                updateProgressBar();
+            }
+        }
+
+        // Show results
+        function showResults() {
+            questionContainer.style.display = 'none';
+            resultsContainer.style.display = 'block';
+            finalScoreElement.textContent = `${score}/${shuffledQuizData.length}`;
+        }
+
+        // Restart quiz
+        function restartQuiz() {
+            currentQuestion = 0;
+            score = 0;
+            userAnswers = Array(shuffledQuizData.length).fill(null);
+            
+            // Reshuffle questions
+            shuffleQuestions();
+            
+            questionContainer.style.display = 'block';
+            resultsContainer.style.display = 'none';
+            
+            showQuestion();
+            updateProgressBar();
+            updateScoreCircle();
+        }
+
+        // Initialize the quiz when the page loads
+        window.addEventListener('load', initQuiz);
+    </script>
+</body>
+</html>
