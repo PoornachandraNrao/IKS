@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Nitte ECG Monitoring System</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <style>
+    /* ---------- Theme Variables ---------- */
+    :root{
+      --bg: #f8fafc; /* gray-50 */
+      --surface: #ffffff;
+      --text: #0f172a; /* slate-900 */
+      --muted: #6b7280; /* gray-500 */
+      --primary: #0ea5e9; /* sky-500 */
+      --primary-600: #0284c7;
+      --accent: #7c3aed; /* violet-600 */
+      --success: #16a34a; /* green-600 */
+      --danger: #dc2626;
+      --glass: rgba(255,255,255,0.6);
+      --card-shadow: 0 10px 25px rgba(2,6,23,0.06);
+      --border: rgba(15,23,42,0.06);
+      --grid-green: rgba(0,255,0,0.11);
+      --ecg-stroke: #00ff66;
+      --glass-border: rgba(255,255,255,0.1);
+    }
+
+    html.dark{
+      --bg: #0b1220; /* deep blue-black */
+      --surface: linear-gradient(180deg, rgba(12,18,28,0.6), rgba(9,12,18,0.55));
+      --text: #e6eef8;
+      --muted: #9aa8bf;
+      --primary: #38bdf8; /* sky-400 (brighter on dark) */
+      --primary-600: #06b6d4;
+      --accent: #8b5cf6; /* purple-500 */
+      --success: #34d399;
+      --danger: #fb7185;
+      --glass: rgba(255,255,255,0.03);
+      --card-shadow: 0 10px 30px rgba(2,6,23,0.5);
+      --border: rgba(255,255,255,0.06);
+      --grid-green: rgba(0,255,120,0.08);
+      --ecg-stroke: #66ff99;
+      --glass-border: rgba(255,255,255,0.04);
+    }
+
+    /* ---------- Base transitions & typography ---------- */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    *{ font-family:'Inter',sans-serif; box-sizing: border-box; }
+
+    body{
+      background: var(--bg);
+      color: var(--text);
+      transition: background-color 450ms cubic-bezier(.2,.9,.2,.99), color 350ms ease;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+    }
+
+    /* Allow some properties to transition for nice theme swap */
+    .transition-theme {
+      transition:
+        background 450ms cubic-bezier(.2,.9,.2,.99),
+        color 350ms ease,
+        box-shadow 350ms ease,
+        border-color 350ms ease,
+        transform 220ms cubic-bezier(.2,.9,.2,.99);
+    }
+
+    /* ---------- Navigation ---------- */
+    nav {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      box-shadow: var(--card-shadow);
+      transition: background 400ms ease, border-color 400ms ease;
+    }
+
+    /* ---------- Hero ---------- */
+    .hero-bg {
+      background: linear-gradient(135deg, rgba(14,165,233,0.06) 0%, rgba(124,58,237,0.04) 100%);
+    }
+    html.dark .hero-bg{
+      background: linear-gradient(135deg, rgba(56,189,248,0.04) 0%, rgba(139,92,246,0.03) 100%);
+    }
+
+    /* ---------- Card styles ---------- */
+    .card {
+      background: var(--surface);
+      border-radius: 1rem;
+      padding: 1.25rem;
+      border: 1px solid transparent;
+      box-shadow: var(--card-shadow);
+      transition: transform 260ms cubic-bezier(.2,.9,.2,.99), box-shadow 260ms ease, border-color 260ms ease, background 260ms ease;
+    }
+
+    /* Formal hover - slight lift + smooth scale */
+    .card-hoverable:hover {
+      transform: translateY(-6px) scale(1.01);
+      box-shadow: 0 22px 40px rgba(2,6,23,0.14);
+    }
+
+    /* Subtle focus state for keyboard accessibility */
+    .card:focus-within {
+      outline: 2px solid rgba(56,189,248,0.12);
+      outline-offset: 2px;
+    }
+
+    /* Team / Vital cards slight glass effect on dark */
+    html.dark .card { background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border: 1px solid rgba(255,255,255,0.03); }
+
+    /* ---------- Hover zoom (for many boxes) ---------- */
+    .hover-zoom {
+      transform-origin: center;
+      will-change: transform;
+      transition: transform 260ms cubic-bezier(.2,.9,.2,.99), box-shadow 260ms ease;
+    }
+    .hover-zoom:hover {
+      transform: translateY(-6px) scale(1.02);
+    }
+
+    /* apply to many types of cards */
+    .vital-card, .team-card { border-radius: 1rem; }
+
+    /* Icons/Badge style */
+    .badge {
+      padding: .4rem .6rem;
+      border-radius: .75rem;
+      font-weight: 600;
+    }
+
+    /* ---------- ECG Styling ---------- */
+    svg { display:block; }
+    #ecg-container {
+      background: linear-gradient(180deg, rgba(0,0,0,0.9), rgba(0,0,0,0.85));
+      border-radius: 0.75rem;
+      padding: .75rem;
+      overflow: hidden;
+    }
+
+    /* ECG path drawing smoother */
+    .ecg-line {
+      stroke-dasharray: 1200;
+      stroke-dashoffset: 1200;
+      animation: drawECG 2.4s linear infinite;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      transition: stroke 300ms ease;
+    }
+    @keyframes drawECG {
+      0% { stroke-dashoffset: 1200; }
+      100% { stroke-dashoffset: 0; }
+    }
+
+    /* grid fade */
+    .grid-rect { opacity: .18; transition: opacity 350ms ease; stroke: var(--ecg-stroke); }
+
+    /* respects prefers-reduced-motion */
+    @media (prefers-reduced-motion: reduce) {
+      .ecg-line { animation: none; stroke-dashoffset: 0; }
+      .hover-zoom, .card-hoverable { transition: none; transform: none; }
+    }
+
+    /* ---------- Controls: Theme toggle ---------- */
+    .theme-toggle {
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      width:44px;height:44px;border-radius:10px;
+      border: 1px solid var(--border);
+      background: linear-gradient(180deg, rgba(255,255,255,0.9), rgba(255,255,255,0.8));
+      cursor:pointer;
+      transition: transform 180ms ease, background 300ms ease, border-color 300ms ease;
+    }
+    html.dark .theme-toggle {
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border: 1px solid rgba(255,255,255,0.04);
+    }
+    .theme-toggle:active { transform: scale(.97); }
+
+    /* ---------- patient list selection ---------- */
+    .patient-card {
+      transition: background 220ms ease, border-color 220ms ease, transform 220ms ease;
+      border-radius: .5rem;
+    }
+    .patient-card.active {
+      background: linear-gradient(90deg, rgba(14,165,233,0.07), rgba(124,58,237,0.07));
+      border-left: 4px solid var(--primary);
+    }
+
+    /* ---------- small helpers ---------- */
+    .muted { color: var(--muted); }
+    .primary { color: var(--primary); }
+    .btn-primary {
+      background: linear-gradient(90deg,var(--primary),var(--primary-600));
+      color: white;
+      border-radius: .75rem;
+      padding: .65rem 1.05rem;
+      font-weight: 600;
+      box-shadow: 0 12px 30px rgba(10,40,80,0.08);
+      transition: transform 180ms ease, box-shadow 180ms ease, opacity 180ms;
+    }
+    .btn-primary:hover { transform: translateY(-4px); box-shadow: 0 20px 46px rgba(10,40,80,0.12); }
+
+    /* make SVG scale nicely on mobile */
+    .ecg-svg { width: 100%; height: 180px; max-height: 240px; display:block; }
+
+    /* responsiveness tweaks */
+    @media (max-width: 640px) {
+      .ecg-svg { height: 150px; }
+      .hero-title { font-size: 2rem; }
+    }
+    
+
+  </style>
+</head>
+<body class="transition-theme">
+
+  <!-- Navigation -->
+ <!-- Navbar Container -->
+<nav class="bg-white dark:bg-gray-900 shadow-md fixed top-0 left-0 w-full z-50">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex items-center justify-between h-16">
+      
+    <div class="flex items-center space-x-2 mr-auto">
+        <div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background:linear-gradient(90deg,var(--primary),var(--accent));">
+        <i class="fas fa-heartbeat text-white text-lg"></i>
+        </div>
+        <span class="text-xl font-bold primary">Nitte</span>
+      </div>
+
+      <!-- Desktop Menu -->
+      <div class="hidden md:flex items-center justify-center space-x-4">
+        <a href="#" onclick="showPage('home', event)" class="nav-link text-lg font-medium px-3 py-2 rounded-md transition-colors hover:text-blue-500">Home</a>
+        <a href="#" onclick="showPage('patients', event)" class="nav-link text-lg font-medium px-3 py-2 rounded-md transition-colors hover:text-blue-500">Patient Details</a>
+        <a href="#" onclick="showPage('about', event)" class="nav-link text-lg font-medium px-3 py-2 rounded-md transition-colors hover:text-blue-500">About Us</a>
+        <button id="themeBtn" aria-label="Toggle theme" class="theme-toggle ml-4" onclick="toggleTheme()">
+          <i id="themeIcon" class="fas fa-moon"></i>
+        </button>
+      </div>
+
+      <!-- Mobile Menu Button -->
+      <div class="md:hidden">
+        <button onclick="toggleMobileMenu()" class="text-gray-700 dark:text-gray-200 focus:outline-none">
+          <i class="fas fa-bars text-2xl"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile Menu (hidden by default) -->
+  <div id="mobileMenu" class="hidden md:hidden px-4 pb-4 space-y-2">
+    <a href="#" onclick="showPage('home', event)" class="block nav-link text-lg font-medium px-3 py-2 rounded-md transition-colors hover:text-blue-500">Home</a>
+    <a href="#" onclick="showPage('patients', event)" class="block nav-link text-lg font-medium px-3 py-2 rounded-md transition-colors hover:text-blue-500">Patient Details</a>
+    <a href="#" onclick="showPage('about', event)" class="block nav-link text-lg font-medium px-3 py-2 rounded-md transition-colors hover:text-blue-500">About Us</a>
+    <button id="themeBtnMobile" aria-label="Toggle theme" class="theme-toggle mt-2" onclick="toggleTheme()">
+      <i id="themeIconMobile" class="fas fa-moon"></i>
+    </button>
+  </div>
+</nav>
+
+
+  <!-- Home Page -->
+  <div id="home-page" class="page">
+    <section class="hero-bg min-h-screen flex items-center transition-theme">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 w-full">
+        <div class="text-center">
+          <div class="mb-6">
+            <div class="inline-flex items-center justify-center w-20 h-20 rounded-full" style="background:linear-gradient(90deg,var(--primary),var(--accent));box-shadow:0 18px 34px rgba(14,165,233,0.08);">
+              <i class="fas fa-heartbeat text-white text-3xl"></i>
+            </div>
+          </div>
+
+          <h1 class="text-5xl md:text-6xl font-bold mb-4 hero-title">Real-time ECG Monitoring</h1>
+          <p class="text-xl md:text-2xl muted max-w-3xl mx-auto mb-8">Advanced patient monitoring for healthcare professionals — real-time waveform, vitals and clean patient management.</p>
+          <button onclick="showPage('patients', event)" class="btn-primary">
+            View Patient Details <i class="fas fa-arrow-right ml-2"></i>
+          </button>
+
+          <!-- Features -->
+          <div class="mt-12 grid md:grid-cols-3 gap-6">
+            <div class="card card-hoverable hover-zoom">
+              <div class="flex items-center gap-4 mb-3">
+                <div class="w-12 h-12 rounded-lg flex items-center justify-center" style="background: rgba(16,185,129,0.08);">
+                  <i class="fas fa-chart-line text-green-600"></i>
+                </div>
+                <h3 class="text-lg font-semibold">Real-time Monitoring</h3>
+              </div>
+              <p class="muted">Continuous ECG monitoring with smooth live waveform and alerts.</p>
+            </div>
+
+            <div class="card card-hoverable hover-zoom">
+              <div class="flex items-center gap-4 mb-3">
+                <div class="w-12 h-12 rounded-lg flex items-center justify-center" style="background: rgba(14,165,233,0.06);">
+                  <i class="fas fa-user-md text-sky-500"></i>
+                </div>
+                <h3 class="text-lg font-semibold">Patient Management</h3>
+              </div>
+              <p class="muted">Structured patient records, vitals history and export-ready snapshots.</p>
+            </div>
+
+            <div class="card card-hoverable hover-zoom">
+              <div class="flex items-center gap-4 mb-3">
+                <div class="w-12 h-12 rounded-lg flex items-center justify-center" style="background: rgba(124,58,237,0.06);">
+                  <i class="fas fa-cogs text-purple-600"></i>
+                </div>
+                <h3 class="text-lg font-semibold">Easy to Operate</h3>
+              </div>
+              <p class="muted">Minimal learning curve, clear UI and accessibility-first design.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Patient Details Page -->
+  <div id="patients-page" class="page hidden">
+    <div class="flex flex-col md:flex-row min-h-screen">
+      <!-- Sidebar -->
+      <aside class="w-full md:w-80 bg-white dark:bg-transparent border-r border-gray-100 dark:border-gray-700 transition-theme">
+        <div class="p-6">
+          <h2 class="text-xl font-semibold mb-6">Patient List</h2>
+          <div class="space-y-3">
+            <div id="card-person1" class="patient-card p-4 cursor-pointer transition-theme" onclick="selectPatient('person1', event)">
+              <div class="flex items-center justify-between">
+                <div>
+                  <h3 class="font-medium">person1</h3>
+                  <p class="text-sm muted">ID: P001</p>
+                </div>
+                <div class="w-3 h-3 bg-green-500 rounded-full"></div>
+              </div>
+            </div>
+
+            <div id="card-person2" class="patient-card p-4 cursor-pointer transition-theme" onclick="selectPatient('person2', event)">
+              <div class="flex items-center justify-between">
+                <div>
+                  <h3 class="font-medium">person2</h3>
+                  <p class="text-sm muted">ID: P002</p>
+                </div>
+                <div class="w-3 h-3 bg-yellow-500 rounded-full"></div>
+              </div>
+            </div>
+
+            <div id="card-person3" class="patient-card p-4 cursor-pointer transition-theme" onclick="selectPatient('person3', event)">
+              <div class="flex items-center justify-between">
+                <div>
+                  <h3 class="font-medium">person3</h3>
+                  <p class="text-sm muted">ID: P003</p>
+                </div>
+                <div class="w-3 h-3 bg-green-500 rounded-full"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Main Content -->
+      <main class="flex-1 p-6">
+        <div id="patient-dashboard">
+          <div class="mb-6">
+            <h1 class="text-2xl font-bold mb-2">Patient Dashboard</h1>
+            <p class="muted">Select a patient from the left to view details and live ECG.</p>
+          </div>
+
+          <!-- Patient Info -->
+          <div id="patient-info" class="hidden mb-6">
+            <div class="card transition-theme flex items-center justify-between">
+              <div>
+                <h2 id="patient-name" class="text-xl font-semibold">person1</h2>
+                <p id="patient-id" class="muted">Patient ID: P001</p>
+              </div>
+              <div class="flex items-center gap-3">
+                <div class="w-3 h-3 rounded-full" id="status-dot" style="background:var(--success)"></div>
+                <span class="text-sm" id="status-text" style="color: var(--success)">Active</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- ECG Display -->
+          <div id="ecg-section" class="hidden mb-6">
+            <div class="card transition-theme">
+              <h3 class="text-lg font-semibold mb-3">Real-time ECG</h3>
+              <div id="ecg-container" class="rounded-lg">
+                <svg class="ecg-svg" viewBox="0 0 800 200" preserveAspectRatio="none" role="img" aria-label="ECG waveform">
+                  <defs>
+                    <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+                      <path class="grid-rect" d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(0,255,120,0.08)" stroke-width="0.7"/>
+                    </pattern>
+                  </defs>
+                  <rect width="100%" height="100%" fill="url(#grid)"/>
+                  <path id="ecg-path"
+                        d="M0,100 L50,100 L60,72 L70,128 L80,60 L90,140 L100,100 L150,100 L160,74 L170,126 L180,62 L190,138 L200,100 L250,100 L260,78 L270,122 L280,64 L290,142 L300,100 L350,100 L360,76 L370,124 L380,66 L390,136 L400,100 L450,100 L460,78 L470,118 L480,66 L490,140 L500,100 L550,100 L560,82 L570,118 L580,64 L590,138 L600,100 L650,100 L660,80 L670,120 L680,62 L690,140 L700,100 L750,100 L760,82 L770,120 L780,64 L790,140 L800,100"
+                        fill="none"
+                        stroke="var(--ecg-stroke)"
+                        stroke-width="2.5"
+                        class="ecg-line" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <!-- Vitals Grid -->
+          <div id="vitals-section" class="hidden">
+            <h3 class="text-lg font-semibold mb-4">Vital Signs</h3>
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <!-- Heart Rate -->
+              <div class="vital-card card-hoverable hover-zoom card">
+                <div class="flex items-center justify-between mb-4">
+                  <div class="w-12 h-12 rounded-lg flex items-center justify-center" style="background: rgba(220,38,38,0.06);">
+                    <i class="fas fa-heartbeat text-red-600"></i>
+                  </div>
+                  <span class="text-sm muted">BPM</span>
+                </div>
+                <div class="mb-2"><span id="heart-rate" class="text-3xl font-bold text-red-600">72</span></div>
+                <p class="muted text-sm">Heart Rate</p>
+              </div>
+
+              <!-- Blood Pressure -->
+              <div class="vital-card card-hoverable hover-zoom card">
+                <div class="flex items-center justify-between mb-4">
+                  <div class="w-12 h-12 rounded-lg flex items-center justify-center" style="background: rgba(14,165,233,0.06);">
+                    <i class="fas fa-tint text-sky-500"></i>
+                  </div>
+                  <span class="text-sm muted">mmHg</span>
+                </div>
+                <div class="mb-2"><span id="blood-pressure" class="text-3xl font-bold text-sky-600">120/80</span></div>
+                <p class="muted text-sm">Blood Pressure</p>
+              </div>
+
+              <!-- SpO2 -->
+              <div class="vital-card card-hoverable hover-zoom card">
+                <div class="flex items-center justify-between mb-4">
+                  <div class="w-12 h-12 rounded-lg flex items-center justify-center" style="background: rgba(16,185,129,0.06);">
+                    <i class="fas fa-lungs text-green-600"></i>
+                  </div>
+                  <span class="text-sm muted">%</span>
+                </div>
+                <div class="mb-2"><span id="spo2" class="text-3xl font-bold text-green-600">98</span></div>
+                <p class="muted text-sm">SpO2</p>
+              </div>
+
+              <!-- Respiration -->
+              <div class="vital-card card-hoverable hover-zoom card">
+                <div class="flex items-center justify-between mb-4">
+                  <div class="w-12 h-12 rounded-lg flex items-center justify-center" style="background: rgba(139,92,246,0.06);">
+                    <i class="fas fa-wind text-purple-600"></i>
+                  </div>
+                  <span class="text-sm muted">/min</span>
+                </div>
+                <div class="mb-2"><span id="respiration" class="text-3xl font-bold text-purple-600">16</span></div>
+                <p class="muted text-sm">Respiration Rate</p>
+              </div>
+
+              <!-- Temperature -->
+              <div class="vital-card card-hoverable hover-zoom card">
+                <div class="flex items-center justify-between mb-4">
+                  <div class="w-12 h-12 rounded-lg flex items-center justify-center" style="background: rgba(249,115,22,0.06);">
+                    <i class="fas fa-thermometer-half text-orange-600"></i>
+                  </div>
+                  <span class="text-sm muted">°F</span>
+                </div>
+                <div class="mb-2"><span id="temperature" class="text-3xl font-bold text-orange-600">98.6</span></div>
+                <p class="muted text-sm">Temperature</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- About Us Page -->
+  <div id="about-page" class="page hidden">
+    <div class="pt-16">
+      <section class="py-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div class="text-center mb-12">
+            <h1 class="text-4xl md:text-5xl font-bold mb-3">About Our Project</h1>
+            <p class="muted text-xl max-w-3xl mx-auto">Checking the vitals of the patient — a prototype for ECG processed in MATLAB with real-time visualization.</p>
+          </div>
+
+          <!-- Meet the Team -->
+          <div class="py-10 bg-transparent">
+            <div class="text-center mb-10">
+              <h2 class="text-3xl font-bold mb-2">Meet Our Team</h2>
+              <p class="muted max-w-3xl mx-auto">Dedicated faculty and students working together to advance healthcare technology.</p>
+            </div>
+
+            <div class="mb-12">
+              <h3 class="text-2xl font-bold text-center mb-8" style="color:var(--success)">Faculty Advisors</h3>
+              <div class="flex flex-wrap justify-center gap-8">
+                <div class="team-card card-hoverable hover-zoom card text-center p-8">
+                  <div class="w-32 h-32 mx-auto mb-4 rounded-full overflow-hidden shadow-lg">
+                    <img src="IMG_20250805_190311.jpg" alt="DR.RB" class="w-full h-full object-cover">
+                  </div>
+                  <h4 class="text-xl font-bold mb-1">Dr. Rekha Bhandarkar</h4>
+                  <p class="text-green-600 font-semibold mb-2">Project Coordinator</p>
+                  <p class="muted mb-4">Deputy Registrar Nitte</p>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <h3 class="text-2xl font-bold text-center mb-8" style="color:var(--success)">Development Team</h3>
+              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                <!-- Student cards (kept your content) -->
+                <div class="team-card card-hoverable hover-zoom card text-center p-6">
+                  <div class="w-24 h-24 mx-auto mb-4 rounded-full overflow-hidden shadow-lg">
+                    <img src="IMG_20250607_190528_921.webp" alt="AS" class="w-full h-full object-cover">
+                  </div>
+                  <h4 class="text-lg font-bold mb-1">Ashwij</h4>
+                  <p class="text-green-600 font-semibold mb-2 text-sm">NNM22EC021</p>
+                  <p class="muted text-sm mb-3">TI cracker. Opamp Lover</p>
+                </div>
+
+                <div class="team-card card-hoverable hover-zoom card text-center p-6">
+                  <div class="w-24 h-24 mx-auto mb-4 rounded-full overflow-hidden shadow-lg">
+                    <img src="Beru.jpg" alt="BK" class="w-full h-full object-cover">
+                  </div>
+                  <h4 class="text-lg font-bold mb-1">B Karan</h4>
+                  <p class="text-green-600 font-semibold mb-2 text-sm">NNM22EC031</p>
+                  <p class="muted text-sm mb-3">Mirafra cracked. Samsung waiting</p>
+                </div>
+
+                <div class="team-card card-hoverable hover-zoom card text-center p-6">
+                  <div class="w-24 h-24 mx-auto mb-4 rounded-full overflow-hidden shadow-lg">
+                    <img src="WhatsApp Image 2025-08-24 at 3.01.52 PM.jpeg" alt="BH" class="w-full h-full object-cover">
+                  </div>
+                  <h4 class="text-lg font-bold mb-1">Hrishikesh B</h4>
+                  <p class="text-green-600 font-semibold mb-2 text-sm">NNM22EC050</p>
+                  <p class="muted text-sm mb-3">Higher studies is an option</p>
+                </div>
+
+                <div class="team-card card-hoverable hover-zoom card text-center p-6">
+                  <div class="w-24 h-24 mx-auto mb-4 rounded-full overflow-hidden shadow-lg">
+                    <img src="passport size photo3.jpg" alt="PC" class="w-full h-full object-cover">
+                  </div>
+                  <h4 class="text-lg font-bold mb-1">Poornachandra N Rao</h4>
+                  <p class="text-green-600 font-semibold mb-2 text-sm">NNM22EC108</p>
+                  <p class="muted text-sm mb-3">No work</p>
+                </div>
+              </div>
+            </div>
+          </div> <!-- end meet team -->
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- JavaScript -->
+  <script>
+    /*********************
+     * Theme toggle logic
+     *********************/
+    const themeBtn = document.getElementById('themeBtn');
+    const themeIcon = document.getElementById('themeIcon');
+
+    // initialize theme based on saved preference or OS
+    (function initTheme(){
+      const saved = localStorage.getItem('theme');
+      if(saved === 'dark' || (!saved && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)){
+        document.documentElement.classList.add('dark');
+        themeIcon.className = 'fas fa-sun';
+      } else {
+        document.documentElement.classList.remove('dark');
+        themeIcon.className = 'fas fa-moon';
+      }
+    })();
+
+    function toggleTheme(){
+      const isDark = document.documentElement.classList.toggle('dark');
+      localStorage.setItem('theme', isDark ? 'dark' : 'light');
+      // swap icon
+      themeIcon.className = isDark ? 'fas fa-sun' : 'fas fa-moon';
+      themeBtn.setAttribute('aria-pressed', isDark ? 'true' : 'false');
+    }
+
+    /*********************
+     * Page navigation
+     * accept event param to avoid global event dependency
+     *********************/
+    function showPage(pageId, ev) {
+      // hide all pages
+      document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
+      // show chosen
+      const target = document.getElementById(pageId + '-page');
+      if(target) target.classList.remove('hidden');
+
+      // nav link active classes
+      document.querySelectorAll('.nav-link').forEach(link=>{
+        link.classList.remove('text-blue-600','primary');
+        link.classList.add('muted');
+      });
+
+      // highlight clicked link if event present
+      if(ev && ev.currentTarget){
+        ev.currentTarget.classList.remove('muted');
+        ev.currentTarget.classList.add('primary');
+      } else {
+        // fallback: find nav links and map by href text
+        // keep Home active if unknown
+        const fallback = document.querySelector(".nav-link");
+        if(fallback){
+          document.querySelectorAll('.nav-link').forEach((l,i)=> {
+            if(i===0){ l.classList.remove('muted'); l.classList.add('primary'); }
+          });
+        }
+      }
+    }
+
+    /*********************
+     * Patients + UI updates
+     *********************/
+    const patients = {
+      'person1': {
+        name: 'person1',
+        id: 'P001',
+        heartRate: 72,
+        bloodPressure: '120/80',
+        spo2: 98,
+        respiration: 16,
+        temperature: 98.6,
+        status: 'Active'
+      },
+      'person2': {
+        name: 'person2',
+        id: 'P002',
+        heartRate: 68,
+        bloodPressure: '115/75',
+        spo2: 97,
+        respiration: 14,
+        temperature: 98.4,
+        status: 'Idle'
+      },
+      'person3': {
+        name: 'person3',
+        id: 'P003',
+        heartRate: 75,
+        bloodPressure: '125/85',
+        spo2: 99,
+        respiration: 18,
+        temperature: 98.8,
+        status: 'Active'
+      }
+    };
+
+    function clearActivePatientCards(){
+      document.querySelectorAll('.patient-card').forEach(c=>{
+        c.classList.remove('active');
+      });
+    }
+
+    function selectPatient(patientId, ev){
+      if(!patients[patientId]) return;
+      const p = patients[patientId];
+
+      // update text
+      document.getElementById('patient-name').textContent = p.name;
+      document.getElementById('patient-id').textContent = 'Patient ID: ' + p.id;
+
+      // vitals
+      document.getElementById('heart-rate').textContent = p.heartRate;
+      document.getElementById('blood-pressure').textContent = p.bloodPressure;
+      document.getElementById('spo2').textContent = p.spo2;
+      document.getElementById('respiration').textContent = p.respiration;
+      document.getElementById('temperature').textContent = p.temperature;
+
+      // status
+      const statusText = document.getElementById('status-text');
+      const statusDot = document.getElementById('status-dot');
+      statusText.textContent = p.status;
+      if(p.status && p.status.toLowerCase() === 'active'){
+        statusDot.style.background = getComputedStyle(document.documentElement).getPropertyValue('--success').trim();
+        statusText.style.color = getComputedStyle(document.documentElement).getPropertyValue('--success').trim();
+      } else {
+        statusDot.style.background = '#f59e0b';
+        statusText.style.color = '#f59e0b';
+      }
+
+      // reveal sections
+      document.getElementById('patient-info').classList.remove('hidden');
+      document.getElementById('ecg-section').classList.remove('hidden');
+      document.getElementById('vitals-section').classList.remove('hidden');
+
+      // highlight card
+      clearActivePatientCards();
+      const cardId = 'card-' + patientId;
+      const cardEl = document.getElementById(cardId);
+      if(cardEl) cardEl.classList.add('active');
+
+      // if called by event, ensure we don't rely on global event
+      if(ev && ev.currentTarget){
+        // do nothing extra
+      }
+    }
+
+    /*********************
+     * Simulate live updates (gentle)
+     *********************/
+    let currentPatientId = null;
+    // helper to get currently selected patient id from name
+    function getSelectedPatientId(){
+      const name = document.getElementById('patient-name').textContent;
+      for(const id in patients){
+        if(patients[id].name === name) return id;
+      }
+      return null;
+    }
+
+    function updateVitalsSimulation(){
+      const selected = getSelectedPatientId();
+      if(!selected) return;
+      // small random walk on vitals for demo
+      const p = patients[selected];
+      // heart rate +/- 2
+      p.heartRate = Math.max(40, Math.min(140, p.heartRate + (Math.floor(Math.random()*5)-2)));
+      p.spo2 = Math.max(85, Math.min(100, p.spo2 + (Math.floor(Math.random()*3)-1)));
+      p.respiration = Math.max(8, Math.min(30, p.respiration + (Math.floor(Math.random()*3)-1)));
+      // update DOM
+      document.getElementById('heart-rate').textContent = p.heartRate;
+      document.getElementById('spo2').textContent = p.spo2;
+      document.getElementById('respiration').textContent = p.respiration;
+    }
+
+    // gentle update every 2.5s
+    setInterval(updateVitalsSimulation, 2500);
+
+    /*********************
+     * Simple small improvements for accessibility
+     *********************/
+    document.addEventListener('keydown', (e)=>{
+      // allow 'h' for home, 'p' for patients, 'a' for about (quick keyboard)
+      if(e.key.toLowerCase() === 'h') showPage('home');
+      if(e.key.toLowerCase() === 'p') showPage('patients');
+      if(e.key.toLowerCase() === 'a') showPage('about');
+    });
+
+    // initialize to home
+    document.addEventListener('DOMContentLoaded', function(){
+      showPage('home');
+      // ensure patient cards exist but no selection initially
+      clearActivePatientCards();
+    });
+
+
+    function toggleMobileMenu() {
+        const menu = document.getElementById("mobileMenu");
+        menu.classList.toggle("hidden");
+    }
+    </script>
+
+
+  </script>
+</body>
+</html>
